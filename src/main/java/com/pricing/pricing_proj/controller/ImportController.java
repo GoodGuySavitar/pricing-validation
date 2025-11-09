@@ -1,4 +1,4 @@
-package com.pricing.pricing_proj;
+package com.pricing.pricing_proj.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.web.bind.annotation.RestController;
@@ -10,18 +10,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.*;
 import java.io.*;
 
+import com.pricing.pricing_proj.model.PricingRow;
 
 
 @RestController
 public class ImportController {
-    //STRICT
-    record PricingRow(
-        String instrumentGuid,
-        String tradeDate,
-        Double price,
-        String exchange,
-        String productType
-    ) {}
 
     //THIS IS NOT FLEXIBLE AND WILL THROW AN ERROR IF JSON ISNT THE IN THE CORRECT FORMAT
     private final ObjectMapper om = new ObjectMapper();
