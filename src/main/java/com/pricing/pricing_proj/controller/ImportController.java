@@ -1,30 +1,29 @@
 package com.pricing.pricing_proj.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pricing.pricing_proj.model.PricingRow;
+import com.pricing.pricing_proj.validation.ValidationService;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.*;
 import java.io.*;
 
-import com.pricing.pricing_proj.model.PricingRow;
 
 
 @RestController
 public class ImportController {
 
+    private final ValidationService validator;
+
+    public ImportController(ValidationService validator) {
+        this.validator = validator;
+    }
+
     //THIS IS NOT FLEXIBLE AND WILL THROW AN ERROR IF JSON ISNT THE IN THE CORRECT FORMAT
     private final ObjectMapper om = new ObjectMapper();
-
-    
-    @GetMapping("/api/test")
-    public String testing() {
-        return "API is working";
-    }
-    
     
     //TO IMPORT THE FILE AND READ CONTENT AND ALSO FIGURE OUT IF ITS IN JSON OR CSV FORMAT
     //@PostMapping IS BASICALLY JUST HANDLING THE POST REQUEST TO THE /api/import ENDPOINT
@@ -40,17 +39,26 @@ public class ImportController {
         if(isJSONFormat(content))
         {
             List<PricingRow> rows = parseJSON(content);
+            ValidationService.Result result = validator.validateData(rows);
+
             response.put("format", "JSON");
             response.put("size", rows.size());
             response.put("data", rows.stream().limit(5).toList());
+            response.put("summary", result.summary());
+            response.put("issues", result.issues());
+
             return response;
         }
         else
         {
             List<PricingRow> rows = parseCSV(data);
+            ValidationService.Result result = validator.validateData(rows);
+
             response.put("format", "CSV");
             response.put("size", rows.size());
             response.put("data", rows.stream().limit(5).toList());
+            response.put("summary", result.summary());
+            response.put("isssues", result.issues());
             return response;
         }
     }
