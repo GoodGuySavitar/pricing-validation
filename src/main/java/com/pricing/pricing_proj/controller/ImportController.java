@@ -16,6 +16,14 @@ import java.io.*;
 @RestController
 public class ImportController {
 
+    public record Response(
+        String format,                 
+        int size,                      
+        List<PricingRow> preview,      
+        ValidationService.Summary summary,
+        List<ValidationService.Issue> issues
+    ) {};
+
     private final ValidationService validator;
 
     public ImportController(ValidationService validator) {
@@ -28,39 +36,24 @@ public class ImportController {
     //TO IMPORT THE FILE AND READ CONTENT AND ALSO FIGURE OUT IF ITS IN JSON OR CSV FORMAT
     //@PostMapping IS BASICALLY JUST HANDLING THE POST REQUEST TO THE /api/import ENDPOINT
     @PostMapping(value = "/api/import", consumes = {"multipart/form-data"})
-    public Map<String, Object> uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
+    public Response uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
         
         
         byte[] data = file.getBytes();              
         String content = new String(data, java.nio.charset.StandardCharsets.UTF_8).trim();
+
+        List<PricingRow> rows = isJSONFormat(content) ? parseJSON(content) : parseCSV(data);
+        var result = validator.validateData(rows);
+
+        Response response = new Response(
+            isJSONFormat(content) ? "JSON" : "CSV",
+            rows.size(),
+            rows.stream().limit(5).toList(),
+            result.summary(),
+            result.issues()
+        );
         
-        Map<String, Object> response = new HashMap<>();
-
-        if(isJSONFormat(content))
-        {
-            List<PricingRow> rows = parseJSON(content);
-            ValidationService.Result result = validator.validateData(rows);
-
-            response.put("format", "JSON");
-            response.put("size", rows.size());
-            response.put("data", rows.stream().limit(5).toList());
-            response.put("summary", result.summary());
-            response.put("issues", result.issues());
-
-            return response;
-        }
-        else
-        {
-            List<PricingRow> rows = parseCSV(data);
-            ValidationService.Result result = validator.validateData(rows);
-
-            response.put("format", "CSV");
-            response.put("size", rows.size());
-            response.put("data", rows.stream().limit(5).toList());
-            response.put("summary", result.summary());
-            response.put("isssues", result.issues());
-            return response;
-        }
+        return response;
     }
 
     //JSON PARSING LOGIC
