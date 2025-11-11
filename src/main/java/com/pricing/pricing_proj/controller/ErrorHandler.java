@@ -20,19 +20,19 @@ public class ErrorHandler {
         return json(ex.getStatusCode().value(), ex.getReason());
     }
 
-    // 400: file upload problems, size limits, etc.
+    // 400: FILE UPLOAD ISSUES, SIZE LIMIT, ETC
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<?> handleMultipart(MultipartException ex) {
         return json(HttpStatus.BAD_REQUEST.value(), "Invalid file upload: " + ex.getMessage());
     }
 
-    // 400: bad params in general
+    // 400: BAD PARAMS IN GENERAL
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return json(HttpStatus.BAD_REQUEST.value(), "Bad request: " + ex.getMessage());
     }
 
-    // 500: everything else
+    // 500: GENERIC SERVER ERROR
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleAny(Exception ex) {
         return json(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Server error: " + ex.getMessage());

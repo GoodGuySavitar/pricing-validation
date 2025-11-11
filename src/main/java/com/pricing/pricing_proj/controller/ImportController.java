@@ -1,6 +1,8 @@
 package com.pricing.pricing_proj.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pricing.pricing_proj.data.PricingRecordRepository;
 import com.pricing.pricing_proj.model.PricingRow;
+import com.pricing.pricing_proj.service.PricingService;
 import com.pricing.pricing_proj.validation.ValidationService;
 
 import org.springframework.web.bind.annotation.RestController;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.io.*;
 
 
@@ -21,13 +24,28 @@ public class ImportController {
         int size,                      
         List<PricingRow> preview,      
         ValidationService.Summary summary,
-        List<ValidationService.Issue> issues
-    ) {};
+        List<ValidationService.Issue> issues,
+        int validRows,
+        int saved,
+        int skippedDuplicates,
+        List<Warning> warnings
+    ) {
+        public static record Warning(
+            int rowNumber,
+            String code,
+            String message
+        ) {}
+    };
 
     private final ValidationService validator;
+    private final PricingService pricingService;
+    private final PricingRecordRepository repository;
 
-    public ImportController(ValidationService validator) {
+    public ImportController(ValidationService validator, PricingService pricingService, 
+    PricingRecordRepository repository){
         this.validator = validator;
+        this.pricingService = pricingService;
+        this.repository = repository;
     }
 
     //THIS IS NOT FLEXIBLE AND WILL THROW AN ERROR IF JSON ISNT THE IN THE CORRECT FORMAT
@@ -36,8 +54,9 @@ public class ImportController {
     //TO IMPORT THE FILE AND READ CONTENT AND ALSO FIGURE OUT IF ITS IN JSON OR CSV FORMAT
     //@PostMapping IS BASICALLY JUST HANDLING THE POST REQUEST TO THE /api/import ENDPOINT
     @PostMapping(value = "/api/import", consumes = {"multipart/form-data"})
-    public Response uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
-        
+    public Response uploadFile(
+        @RequestParam("file") MultipartFile file, 
+        @RequestParam(name = "commit", defaultValue = "false") boolean commit) throws Exception {
         
         byte[] data = file.getBytes();              
         String content = new String(data, java.nio.charset.StandardCharsets.UTF_8).trim();
@@ -45,14 +64,69 @@ public class ImportController {
         List<PricingRow> rows = isJSONFormat(content) ? parseJSON(content) : parseCSV(data);
         var result = validator.validateData(rows);
 
+        //THIS SET CONTAINS THE ROW NUMBERS OF INVALID ROWS. THESE WILL NOT BE ADDED IN THE DATABASE
+        Set<Integer> invalidRowNums = new HashSet<>();
+        for(var issue : result.issues()){
+            invalidRowNums.add(issue.rowNumber());
+        }
+
+        //THESE WILL BE ADDED TO THE DATABASE
+        List<PricingRow> validRows = new ArrayList<>();
+        for(int i = 0; i < rows.size(); i++){
+            int rowNum = i + 1; 
+            if(!invalidRowNums.contains(rowNum)){ 
+                validRows.add(rows.get(i));
+            }
+        }
+
+        //CHECK FOR DUPLICATE intrumentGuids IN THE DATABASE. THESE WILL BE SKIPPED AND A WARNING WILL BE RETURNED
+        List<String> guids = validRows.stream().map(PricingRow::instrumentGuid)
+        .filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();
+
+        Set<String> existingGuids = repository.findAllByInstrumentGuidIn(guids).stream()
+        .map(r -> r.getInstrumentGuid()).collect(Collectors.toSet());   
+
+        //THIS WHOLE THING IS TO FILTER OUT THE DUPLICATES AND PREPARE WARNINGS. IT FIRST CHECKS IF THE ROW IS VALID OR NOT, THEN IF IT IS A DUPLICATE THEN LETS THE USER KNOW ABOUT IT INSTEAD OF GIVING THEM AN ERROR 
+        List<PricingRow> finalValidRows = new ArrayList<>();
+        List<Response.Warning> warnings = new ArrayList<>();
+        int skippedDuplicates = 0;
+        for(int i = 0; i < rows.size(); i++){
+            int rowNum = i + 1;
+            if(invalidRowNums.contains(rowNum)){
+                continue; 
+            }
+
+            PricingRow row = rows.get(i);
+            String guid = row.instrumentGuid() == null ? "" : row.instrumentGuid().trim();
+            if(!guid.isEmpty() && existingGuids.contains(guid)){
+                skippedDuplicates++;
+                warnings.add(new Response.Warning(
+                    rowNum,
+                    "DUPLICATE_IN_DB",
+                    "Row with instrumentGuid '" + guid + "' already exists in the database and was skipped."
+                ));
+            } else {
+                finalValidRows.add(row);
+            }
+        }
+        
+        int saved = 0;
+        if (commit && !finalValidRows.isEmpty()) {
+            saved = pricingService.saveAll(finalValidRows);
+        }
+
+        //FINAL RESPONSE THAT IS RETURNED TO THE USER
         Response response = new Response(
             isJSONFormat(content) ? "JSON" : "CSV",
             rows.size(),
             rows.stream().limit(5).toList(),
             result.summary(),
-            result.issues()
+            result.issues(),
+            validRows.size(),
+            saved,
+            skippedDuplicates,
+            warnings
         );
-        
         return response;
     }
 
