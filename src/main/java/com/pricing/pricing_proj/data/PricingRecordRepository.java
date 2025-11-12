@@ -8,5 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 //A REPOSITORY IS USED TO INTERACT WITH THE DATABASE WITHOUT WRITING ANY ACTUAL SQL QUERIES. 
 //^ THIS IS A PART OF SPRING DATA JPA (MY REFERENCE)
 public interface PricingRecordRepository extends JpaRepository<PricingRecord, Long> {
+    boolean existsByInstrumentGuid(String guid);    //THIS IS MADE SPECIFIICALLY WHEN USER WANTS TO ADD A NEW RECORD WITHOUT UPLOADING A FILE.
     List<PricingRecord> findAllByInstrumentGuidIn(List<String> instrumentGuids);
 }
