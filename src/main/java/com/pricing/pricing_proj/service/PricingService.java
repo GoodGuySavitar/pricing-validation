@@ -3,8 +3,6 @@ package com.pricing.pricing_proj.service;
 import java.math.BigDecimal;
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -47,7 +45,6 @@ public class PricingService {
 
     @Transactional(readOnly = true)
     public List<PricingRecord> listAll() {
-        // optional: sort by id to make results stable
         return repository.findAll(org.springframework.data.domain.Sort.by("id"));
     }
 

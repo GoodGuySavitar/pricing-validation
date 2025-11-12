@@ -2,6 +2,7 @@ package com.pricing.pricing_proj.controller;
 
 import jakarta.validation.constraints.*;
 
+//FORMAT FOR HOW THE DATA LOOKS
 public record PricingCrud(
     @NotBlank String instrumentGuid,
     @NotBlank String tradeDate,

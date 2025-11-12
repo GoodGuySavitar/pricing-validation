@@ -6,12 +6,11 @@ import jakarta.validation.Valid;
 
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 
+//THIS IS A CONTROLLER TO HANDLE THE CRUD OPERATIONS FOR PRICING RECORDS
 @RestController
 @RequestMapping("/api/pricing")
 public class PricingCrudController {
