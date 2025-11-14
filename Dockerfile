@@ -12,21 +12,21 @@ COPY .mvn ./.mvn
 RUN mvn clean package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 WORKDIR /app
-
-# Create non-root user
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
 
 # Copy JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose port
+# Create non-root user
+RUN groupadd -r spring \
+ && useradd -r -g spring -s /sbin/nologin -d /nonexistent spring \
+ && chown spring:spring /app/app.jar
+
+USER spring:spring
+
 EXPOSE 8080
 
-# Set timezone to UTC
 ENV TZ=UTC
 
-# Run the application
 ENTRYPOINT ["java", "-Duser.timezone=UTC", "-jar", "app.jar"]
