@@ -1,0 +1,13 @@
+target/
+.mvn/wrapper/
+!.mvn/jvm.config
+.env
+.git
+.gitignore
+*.md
+.vscode/
+.idea/
+*.iml
+pgdata/
+logs/
+*.log

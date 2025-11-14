@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pricing-pg
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pricingdb}
+      POSTGRES_USER: ${POSTGRES_USER:-pricing}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pricing}
+      TZ: Asia/Kolkata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - pricing-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pricing"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pricing-app
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/pricingdb?options=-c%20TimeZone%3DAsia%2FKolkata}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-pricing}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-pricing}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pricing-network
+
+volumes:
+  pgdata:
+
+networks:
+  pricing-network:
+    driver: bridge
