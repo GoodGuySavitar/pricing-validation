@@ -55,8 +55,7 @@ public class ImportController {
     //@PostMapping IS BASICALLY JUST HANDLING THE POST REQUEST TO THE /api/import ENDPOINT
     @PostMapping(value = "/api/import", consumes = {"multipart/form-data"})
     public Response uploadFile(
-        @RequestParam("file") MultipartFile file, 
-        @RequestParam(name = "commit", defaultValue = "false") boolean commit) throws Exception {
+        @RequestParam("file") MultipartFile file) throws Exception {
         
         byte[] data = file.getBytes();              
         String content = new String(data, java.nio.charset.StandardCharsets.UTF_8).trim();
@@ -111,7 +110,7 @@ public class ImportController {
         }
         
         int saved = 0;
-        if (commit && !finalValidRows.isEmpty()) {
+        if (!finalValidRows.isEmpty()) {
             saved = pricingService.saveAll(finalValidRows);
         }
 
