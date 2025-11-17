@@ -54,6 +54,12 @@ public class PricingService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: id=" + id));
     }
 
+    @Transactional(readOnly = true)
+    public PricingRecord getByInstrumentGuid(String instrumentGuid){
+        return repository.findByInstrumentGuid(instrumentGuid.trim())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: instrumentGuid=" + instrumentGuid));
+    }
+
     @Transactional
     public PricingRecord create(PricingCrud dto){
         
@@ -92,10 +98,36 @@ public class PricingService {
     }
 
     @Transactional
+    public void updateByInstrumentGuid(String instrumentGuid, PricingCrud dto){
+        PricingRecord rec = repository.findByInstrumentGuid(instrumentGuid.trim())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: instrumentGuid=" + instrumentGuid));
+
+        String newGuid = dto.instrumentGuid().trim();
+        if(!newGuid.equals(rec.getInstrumentGuid()) && repository.existsByInstrumentGuid(newGuid)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "instrumentGuid already exists");
+        }
+
+        rec.setInstrumentGuid(newGuid);
+        rec.setTradeDate(dto.tradeDate().trim());
+        rec.setPrice(dto.price() == null ? null : BigDecimal.valueOf(dto.price()));
+        rec.setExchange(dto.exchange().trim());
+        rec.setProductType(dto.productType().trim());
+
+        repository.save(rec);
+    }
+
+    @Transactional
     public void delete(Long id){
         if(!repository.existsById(id)){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: id=");
         }
         repository.deleteById(id);
     }   
+
+    @Transactional
+    public void deleteByInstrumentGuid(String instrumentGuid){
+        PricingRecord rec = repository.findByInstrumentGuid(instrumentGuid.trim())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: instrumentGuid=" + instrumentGuid));
+        repository.delete(rec);
+    }
 }

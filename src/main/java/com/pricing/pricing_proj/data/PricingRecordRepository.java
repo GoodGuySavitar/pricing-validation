@@ -1,6 +1,7 @@
 package com.pricing.pricing_proj.data;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,4 +11,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PricingRecordRepository extends JpaRepository<PricingRecord, Long> {
     boolean existsByInstrumentGuid(String guid);    //THIS IS MADE SPECIFIICALLY WHEN USER WANTS TO ADD A NEW RECORD WITHOUT UPLOADING A FILE.
     List<PricingRecord> findAllByInstrumentGuidIn(List<String> instrumentGuids);
+    Optional<PricingRecord> findByInstrumentGuid(String instrumentGuid);
 }

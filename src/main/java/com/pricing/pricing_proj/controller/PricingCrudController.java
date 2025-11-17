@@ -25,9 +25,10 @@ public class PricingCrudController {
         return service.listAll();
     }
 
-    @GetMapping("/{id}")
-    public PricingRecord get(@PathVariable Long id) {
-        return service.getById(id);
+    //Fetch by instrumentGuid instead of numeric id
+    @GetMapping("/{instrumentGuid}")
+    public PricingRecord get(@PathVariable String instrumentGuid) {
+        return service.getByInstrumentGuid(instrumentGuid);
     }
 
     @PostMapping
@@ -36,15 +37,16 @@ public class PricingCrudController {
         return service.create(body);
     }
 
-    @PutMapping("/{id}")
+    //Update by current instrumentGuid; body may change instrumentGuid
+    @PutMapping("/{instrumentGuid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void update(@PathVariable Long id, @Valid @RequestBody PricingCrud body) {
-        service.update(id, body);
+    public void update(@PathVariable String instrumentGuid, @Valid @RequestBody PricingCrud body) {
+        service.updateByInstrumentGuid(instrumentGuid, body);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{instrumentGuid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public void delete(@PathVariable String instrumentGuid) {
+        service.deleteByInstrumentGuid(instrumentGuid);
     }
 }
