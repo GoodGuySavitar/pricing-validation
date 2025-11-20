@@ -1,6 +1,7 @@
 package com.pricing.pricing_proj.data;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 import jakarta.persistence.*;
 
@@ -9,10 +10,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "pricing_records")
 public class PricingRecord {
-    @Id 
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    @Id
     @Column(nullable = false, unique = true)
     private String instrumentGuid;
 
@@ -29,14 +27,6 @@ public class PricingRecord {
     private String productType;
 
     //GETTERS AND SETTERS
-    public Long getId() {
-        return id;
-    }           
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getInstrumentGuid() {
         return instrumentGuid;
     }
@@ -75,6 +65,20 @@ public class PricingRecord {
 
     public void setProductType(String productType) {
         this.productType = productType;
+    }
+
+    //WHEN CHANGING instrumentGuid TO PRIMARY KEY, JPA NEEDS TO KNOW THAT TWO OBJECTS WITH THE SAME instrumentGuid ARE THE SAME RECORD AND DUPLICATION OF PRIMARY KEY IS NOT ALLOWED 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PricingRecord)) return false;
+        PricingRecord that = (PricingRecord) o;
+        return Objects.equals(instrumentGuid, that.instrumentGuid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(instrumentGuid);
     }
 }
 

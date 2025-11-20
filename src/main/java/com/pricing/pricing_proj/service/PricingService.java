@@ -45,13 +45,7 @@ public class PricingService {
 
     @Transactional(readOnly = true)
     public List<PricingRecord> listAll() {
-        return repository.findAll(org.springframework.data.domain.Sort.by("id"));
-    }
-
-    @Transactional(readOnly = true)
-    public PricingRecord getById(Long id){
-        return repository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: id=" + id));
+        return repository.findAll(org.springframework.data.domain.Sort.by("instrumentGuid"));
     }
 
     @Transactional(readOnly = true)
@@ -78,26 +72,6 @@ public class PricingService {
     }
 
     @Transactional
-    public void update(Long id, PricingCrud dto){
-        PricingRecord rec = repository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: id=" + id));
-
-        //IF THE USER IS TRYING TO UPDATE THE instrumentGuid, THEN MAKE SURE IT DOESN'T ALREADY EXIST
-        String newGuid = dto.instrumentGuid().trim();
-        if(!newGuid.equals(rec.getInstrumentGuid()) && repository.existsByInstrumentGuid(newGuid)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "instrumentGuid already exists");
-        }
-
-        rec.setInstrumentGuid(newGuid);
-        rec.setTradeDate(dto.tradeDate().trim());
-        rec.setPrice(dto.price() == null ? null : BigDecimal.valueOf(dto.price()));
-        rec.setExchange(dto.exchange().trim());
-        rec.setProductType(dto.productType().trim());
-        
-        repository.save(rec);
-    }
-
-    @Transactional
     public void updateByInstrumentGuid(String instrumentGuid, PricingCrud dto){
         PricingRecord rec = repository.findByInstrumentGuid(instrumentGuid.trim())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: instrumentGuid=" + instrumentGuid));
@@ -115,14 +89,6 @@ public class PricingService {
 
         repository.save(rec);
     }
-
-    @Transactional
-    public void delete(Long id){
-        if(!repository.existsById(id)){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not found: id=");
-        }
-        repository.deleteById(id);
-    }   
 
     @Transactional
     public void deleteByInstrumentGuid(String instrumentGuid){
